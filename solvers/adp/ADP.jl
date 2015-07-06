@@ -37,7 +37,7 @@ end
 
 function simulate(p::ADPParams,pdr::PDR,s::State,d::Depth)
     # This function runs one iteration of rollout improvement
-    i = indmax(pdr.q + p.ec.*real(sqrt(complex(log(sum(pdr.n)))))./pdr.n)
+    i = indmax(pdr.q + p.ec.*real(sqrt(complex(log(sum(pdr.n)))./pdr.n)))
     a = pdr.A[i] # choose action with highest UCT score
     sp = p.getNextState(s,a,p.rng)
     q = p.getReward(s,a) + rollout(p,sp,int16(d-1))
