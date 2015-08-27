@@ -4,7 +4,7 @@ module GDP
 
 using MDP, DataFrames, Iterators
 
-export GDPParams, GDPState, GDPAction, getGenerativeModel, getPolicyFunctions
+export GDPParams, GDPState, GDPAction, getGenerativeModel, getGenerativeModelADP, getPolicyFunctions
 
 typealias Flights Int16
 typealias Interval Int16
@@ -35,6 +35,10 @@ function getGenerativeModel(p::GDPParams)
     return GenerativeModel(getInitialStateFunction(p),getNextStateFunction(p),getRewardFunction(p))::GenerativeModel
 end
 
+function getGenerativeModelADP(p::GDPParams)
+    return GenerativeModel(getInitialStateFunction(p),getNextStateFunctionADP(p),getRewardFunction(p))::GenerativeModel
+end
+
 function getPolicyFunctions(p::GDPParams)
     return getActionFunction(p)::Function, getPossibleActionsFunction(p)::Function
 end
@@ -54,7 +58,7 @@ function getInitialStateFunction(p::GDPParams)
             end
         end
         aar = getFirstAAR(p,rng)
-        return GDPState(sh,aar,one(Int16),iam)::State
+        return GDPState(sh,aar,zero(Int16),iam)::State
     end
     return getInitialState::Function
 end
@@ -80,10 +84,10 @@ function getRewardFunction(p::GDPParams)
     return getReward::Function
 end
 
-function getNextStateFunction(p::GDPParams)
+function getNextStateFunctionADP(p::GDPParams)
     # This function returns the next state function
-    function getNextState(s::State,a::Action,rng::AbstractRNG)
-        dm = getDelayMatrix(p,s,a,rng) #get delay matrix
+    function getNextState(s::State,a::Action,d::Int,rng::AbstractRNG)
+        dm = getDelayMatrix(p,s,a) #get delay matrix
         nam = zeros(Flights,p.dInt,p.dInt)
         for i = 1:p.dInt  # put together new arrival demand matrix
             for j = 1:p.dInt
@@ -99,7 +103,33 @@ function getNextStateFunction(p::GDPParams)
             end
         end
         t = int16(s.t+1) # update time interval
-        aar = p.getAAR(s.aar,s.t+1,rng) # update aar
+        aar = p.getAAR(int64(s.aar),s.t+1,d,rng) # update aar
+        h = int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
+        return GDPState(t,aar,h,nam)::State
+    end
+    return getNextState::Function
+end
+
+function getNextStateFunction(p::GDPParams)
+    # This function returns the next state function
+    function getNextState(s::State,a::Action,rng::AbstractRNG)
+        dm = getDelayMatrix(p,s,a) #get delay matrix
+        nam = zeros(Flights,p.dInt,p.dInt)
+        for i = 1:p.dInt  # put together new arrival demand matrix
+            for j = 1:p.dInt
+                if i+1 < j && i != p.dInt
+                    nam[i,j] = s.am[i+1,j] 
+                elseif i+1 == j && i != p.dInt
+                    nam[i,j] = s.am[i+1,j] - dm[i+1,j] 
+                elseif i+1 > j && i != p.dInt
+                    nam[i,j] = s.am[i+1,j] + dm[i,j] - dm[i+1,j] 
+                else
+                    nam[i,j] = p.sm[s.t+1+p.dInt,s.t+1+p.dInt-j] + dm[p.dInt,j] 
+                end
+            end
+        end
+        t = int16(s.t+1) # update time interval
+        aar = p.getAAR(int64(s.aar),s.t+1,1,rng) # update aar
         h = int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
         return GDPState(t,aar,h,nam)::State
     end
@@ -114,7 +144,7 @@ function getActionFunction(p::GDPParams)
     return getAction::Function
 end
 
-function getDelayMatrix(p::GDPParams,s::State,a::Action,rng::AbstractRNG)
+function getDelayMatrix(p::GDPParams,s::State,a::Action)
     # This function returns the delay matrix, a (dInt x dInt) matrix whose (i,j) entry is the number of delays to be assigned to the (i,j) entry of the arrival demand matrix. 
     # dOpt (the delay option) controls the way in which delays assigned in an interval are distributed across flights scheduled to depart in the next 1...k intervals
     # dOpt = shortestfirst: Delays shortest flights first (i.e. first delays Flights departing in the next interval, then 2,3...k)
@@ -151,30 +181,25 @@ function getDelayMatrix(p::GDPParams,s::State,a::Action,rng::AbstractRNG)
             end
         end
     elseif p.dOpt == :random
-        jj = 0
-        while true
             for i = 1:p.dInt
-                td = ifloor(min(a.td[i],tdmax[i])) 
-                part = floor(td*rand(rng,i-1))
-                sort!(part) 
-                unshift!(part,0) 
-                push!(part,td) 
-                for j = 1:i
-                    dm[i,j] = int16(part[end-(j-1)]-part[end-j]) 
+                td = min(a.td[i],tdmax[i])
+                dvec = zeros(Int,p.dInt)
+                cnt = 0
+                while true
+                    if cnt == td
+                        break
+                    end
+                    rn = rand(1:i)
+                    if s.am[i,rn] > dvec[rn]
+                        dvec[rn] += 1
+                        cnt += 1
+                    end
                 end
-                if minimum(s.am-dm) >= 0
-                    break
+                for j = 1:length(dvec)
+                    dm[i,j] = dvec[j]
                 end
-                jj += 1
             end
-            if jj > 1000
-                println("Stuck in infinite loop")
-                println(sum(tdmax)-sum(s.am))
-            end
-            if minimum(s.am-dm) >= 0 
-                break 
-            end
-        end
+    else error("Not a valid option")
     end
     return dm::Array{Flights,2}
 end

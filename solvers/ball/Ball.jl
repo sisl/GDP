@@ -1,6 +1,6 @@
 module Ball
 
-# Solves Single Airport Ground Holding Problem for a single airport given the arrival schedule, a set of capacity scenarios and their respective probabilites. Documentation for this model can be found in Ball et al. 2001
+# Solves Single Airport Ground Holding Problem  given the arrival schedule, a set of capacity scenarios and their respective probabilites. Documentation for this model can be found in Ball et al. 2001
 
 export BallParams, simulate
 
@@ -28,7 +28,7 @@ function simulate(p::BallParams)
     D = p.S[:,1]
     E = p.S[:,2]
 
-    ball = Model(solver=GurobiSolver(OutputFlag=0))
+    ball = Model(solver=GurobiSolver(OutputFlag=0,Threads=1))
 
     # X is a (T x 1) vector whose i entry is the number to ground delay in interval i
     @defVar(ball, X[1:T] >= 0, Int)
@@ -80,7 +80,7 @@ function simulate(p::BallParams)
 
     delayed = getValue(X)
 
-    return GDPAction(int16(delayed[:])')::GDPAction
+    return GDPAction(int16(delayed[1:end-1])')::GDPAction # 1 empty interval
 
 end
 

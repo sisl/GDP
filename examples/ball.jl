@@ -3,12 +3,12 @@ using DataFrames
 include("../mdp/MDP.jl")
 include("../mdp/GDP.jl")
 include("../solvers/ball/Ball.jl")
-include("../solvers/ball/Seq.jl")
+include("../solvers/ball/BallSeq.jl")
 include("../datatools/DataTools.jl")
 include("../adpm/readParams.jl")
 include("../adpm/predictAAR.jl")
 
-using MDP, GDP, Seq, DataTools
+using MDP, GDP, BallSeq, DataTools
 
 # Airport and date we want to study
 airport = :EWR # or :SFO
@@ -21,7 +21,10 @@ getAAR = predictAAR(readParams(airport),getForecast(airport))
 ca = 2.
 
 # Number of simulation time steps
-nSteps = 27
+nSteps = 24
+
+# Planning horizon length (hours)
+phl = 6
 
 # Random number generator
 rng = MersenneTwister(rand(1:1000000))
@@ -31,8 +34,11 @@ sm = getSchedule(airport,date)
 aars = readcsv("../data/aars_"*string(airport)*".csv",Int16)
 firstAAR = readcsv("../data/aar_first_"*string(airport)*".csv")
 
+# CDM model - :shortestfirst, :longestfirst, or :random
+cdmModel = :shortestfirst
+
 # Set up GDP parameters
-gmp = GDPParams(int16(nSteps),:shortestfirst,sm,aars,firstAAR,ca,getAAR)
+gmp = GDPParams(int16(phl),:shortestfirst,sm,aars,firstAAR,ca,getAAR)
 
 # Get the MDP generative model  
 model = getGenerativeModel(gmp)
@@ -44,5 +50,5 @@ policy = getBallPolicy(gmp,rng)
 reward = simulate(model,[],policy,nSteps,rng)
 
 # Print statement
-println("Sum of rewards for Ball model at "*string(airport))
-println(reward)
+println("Sum of rewards for Ball et al. model at "*string(airport))
+println(reward)        
