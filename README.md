@@ -23,7 +23,7 @@ Sum of rewards for Approximate Dynamic Programming at EWR
 examples/
     adp.jl                              simulates using approximate dynamic programming 
     ball.jl                             simulates using the Ball et al. model
-    ro.jl                             simulates using the Richetta-Odoni dynamic model
+    ro.jl                               simulates using the Richetta-Odoni dynamic model
     
 mdp/
     MDP.jl                              module for simulating a Markov Decision Process
