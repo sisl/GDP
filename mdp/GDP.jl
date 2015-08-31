@@ -139,8 +139,9 @@ end
 function getActionFunction(p::GDPParams)
     # This function returns the getAction function, which is the default policy- to not delay any flights
     function getAction(s::State,rng::AbstractRNG)
-        return GDPAction(zeros(Flights,1,p.dInt))::Action
-    end
+        aars = s.aar*ones(Int16,p.dInt)
+        return rateToAction(p,s,aars)::Action
+    end 
     return getAction::Function
 end
 
@@ -181,24 +182,24 @@ function getDelayMatrix(p::GDPParams,s::State,a::Action)
             end
         end
     elseif p.dOpt == :random
-            for i = 1:p.dInt
-                td = min(a.td[i],tdmax[i])
-                dvec = zeros(Int,p.dInt)
-                cnt = 0
-                while true
-                    if cnt == td
-                        break
-                    end
-                    rn = rand(1:i)
-                    if s.am[i,rn] > dvec[rn]
-                        dvec[rn] += 1
-                        cnt += 1
-                    end
+        for i = 1:p.dInt
+            td = min(a.td[i],tdmax[i])
+            dvec = zeros(Int,p.dInt)
+            cnt = 0
+            while true
+                if cnt == td
+                    break
                 end
-                for j = 1:length(dvec)
-                    dm[i,j] = dvec[j]
+                rn = rand(1:i)
+                if s.am[i,rn] > dvec[rn]
+                    dvec[rn] += 1
+                    cnt += 1
                 end
             end
+            for j = 1:length(dvec)
+                dm[i,j] = dvec[j]
+            end
+        end
     else error("Not a valid option")
     end
     return dm::Array{Flights,2}

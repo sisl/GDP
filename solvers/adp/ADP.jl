@@ -28,7 +28,7 @@ end
 function selectAction(p::ADPParams,s::State)
     # This function calls simulate and chooses the approximate best action from the reward approximations 
     pdr = PDR{Action}(p.getPossibleActions(s))
-    n = (length(pdr.A)-1)*200
+    n = (length(pdr.A)-1)*1000
     for i = 1:n 
         simulate(p,pdr,s,p.d)
     end
