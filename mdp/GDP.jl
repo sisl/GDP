@@ -137,7 +137,7 @@ function getNextStateFunction(p::GDPParams)
 end
 
 function getActionFunction(p::GDPParams)
-    # This function returns the getAction function, which is the default policy- to not delay any flights
+    # This function returns the getAction function, which is the rollout policy- to choose the current AAR as all future PAARs
     function getAction(s::State,rng::AbstractRNG)
         aars = s.aar*ones(Int16,p.dInt)
         return rateToAction(p,s,aars)::Action
