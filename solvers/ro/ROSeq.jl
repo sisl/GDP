@@ -57,11 +57,13 @@ function getCapacitiesFromMDP(p::GDPParams,s::GDPState,rng::AbstractRNG)
     for i = 1:n 
         for j = 1:size(M,2)
             if j == 1
+                M[i,j] = s.aar
+            elseif j == 2
                 M[i,j] = p.getAAR(int64(s.aar),s.t+1,j,rng)
             elseif j == size(M,2)
                 M[i,j] = 1000000 # basically infinity
             else
-                M[i,j] = p.getAAR(int64(M[i,j-1]),s.t+1,j,rng)
+                M[i,j] = p.getAAR(int64(M[i,j-2]),s.t+1,j-1,rng)
             end 
         end 
     end 

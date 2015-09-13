@@ -38,7 +38,7 @@ firstAAR = readcsv("../data/aar_first_"*string(airport)*".csv")
 cdmModel = :shortestfirst
 
 # Set up GDP parameters
-gmp = GDPParams(int16(phl),cdmModel,sm,aars,firstAAR,ca,getAAR)
+gmp = GDPParams(int16(phl+1),cdmModel,sm,aars,firstAAR,ca,getAAR)
 
 # Get the MDP generative model  
 model = getGenerativeModel(gmp)
