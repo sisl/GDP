@@ -31,14 +31,14 @@ rng = MersenneTwister(rand(1:1000000))
 
 # Read in AAR and schedule data
 sm = getSchedule(airport,date)
-aars = readcsv("../data/aars_"*string(airport)*".csv",Int16)
+aars = convert(Array{Int16},readcsv("../data/aars_"*string(airport)*".csv",Float64))  
 firstAAR = readcsv("../data/aar_first_"*string(airport)*".csv")
 
 # CDM model - :shortestfirst, :longestfirst, or :random
 cdmModel = :shortestfirst
 
 # Set up GDP parameters
-gmp = GDPParams(int16(phl+1),cdmModel,sm,aars,firstAAR,ca,getAAR)
+gmp = GDPParams(Int16(phl+1),cdmModel,sm,aars,firstAAR,ca,getAAR)
 
 # Get the MDP generative model  
 model = getGenerativeModel(gmp)

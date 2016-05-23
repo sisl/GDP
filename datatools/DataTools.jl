@@ -16,7 +16,7 @@ function getSchedule(airport::Symbol,date::ASCIIString)
     sm = zeros(Int16,100,100)
     for i = 1:length(df[:Arrival_1])
         try
-            if int16(df[:Arrival_1][i]) != zero(Int16)
+            if Int16(df[:Arrival_1][i]) != zero(Int16)
                 sm[int16(df[:Arrival_1][i])+one(Int16),int16(df[:Departure_1][i])+one(Int16)] += int16(df[:Flight][i])
             end
         catch

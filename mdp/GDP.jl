@@ -102,9 +102,9 @@ function getNextStateFunctionADP(p::GDPParams)
                 end
             end
         end
-        t = int16(s.t+1) # update time interval
-        aar = p.getAAR(int64(s.aar),s.t+1,d,rng) # update aar
-        h = int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
+        t = Int16(s.t+1) # update time interval
+        aar = p.getAAR(Int64(s.aar),s.t+1,d,rng) # update aar
+        h = Int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
         return GDPState(t,aar,h,nam)::State
     end
     return getNextState::Function
@@ -128,9 +128,9 @@ function getNextStateFunction(p::GDPParams)
                 end
             end
         end
-        t = int16(s.t+1) # update time interval
-        aar = p.getAAR(int64(s.aar),s.t+1,1,rng) # update aar
-        h = int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
+        t = Int16(s.t+1) # update time interval
+        aar = p.getAAR(Int64(s.aar),s.t+1,1,rng) # update aar
+        h = Int16(max(sum(s.am[1,:])+p.sm[t,t]+sum(p.sm[t,1:t-p.dInt-1])-dm[1,1]+s.h-aar,0)) # update number holding 
         return GDPState(t,aar,h,nam)::State
     end
     return getNextState::Function
@@ -157,7 +157,7 @@ function getDelayMatrix(p::GDPParams,s::State,a::Action)
     end
     if p.dOpt == :shortestfirst
         for i = 1:p.dInt
-            td = ifloor(min(a.td[i],tdmax[i])) 
+            td = floor(Integer,min(a.td[i],tdmax[i])) 
             j = 1
             while td > 0 && j <= p.dInt
                 if s.am[i,j] == 0 || dm[i,j] == s.am[i,j]
@@ -170,7 +170,7 @@ function getDelayMatrix(p::GDPParams,s::State,a::Action)
         end
     elseif p.dOpt == :longestfirst
         for i = 1:p.dInt
-            td = ifloor(min(a.td[i],tdmax[i])) 
+            td = floor(Integer,min(a.td[i],tdmax[i])) 
             j = i
             while td > 0 && j > 0
                 if s.am[i,j] == 0 || dm[i,j] == s.am[i,j]
@@ -210,7 +210,7 @@ function getPossibleActionsFunction(p::GDPParams)
     function getPossibleActions(s::State)
         a = Action{}
         actions = Action[] 
-        tmp = collect(product(repeated(p.aars,int64(p.dInt))...))
+        tmp = collect(product(repeated(p.aars,Int64(p.dInt))...))
         for i = 1:length(tmp)
             a = rateToAction(p,s,[tmp[i]...])
             if !in(a,actions)

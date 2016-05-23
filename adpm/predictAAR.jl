@@ -11,7 +11,7 @@ function predictAAR(model::Array,forecast::DataFrame)
     # This function returns the getAAR function, a model for random generation of AARs
     nAARs = size(model,4)
     function getAAR(previousAAR::Int,forecastTime::Int,leadTime::Int,rng::AbstractRNG)
-        conditional = reshape(model[mc(forecast[forecastTime,names(forecast)],leadTime),1,previousAAR+1,:],nAARs,1)
+        conditional = reshape(model[Int(mc(forecast[forecastTime,names(forecast)],leadTime)),1,previousAAR+1,:],nAARs,1)
         rn = rand(rng)
         cnt = 0.
         for i = 1:nAARs

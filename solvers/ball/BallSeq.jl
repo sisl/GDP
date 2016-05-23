@@ -15,7 +15,7 @@ function getScheduleFromMDP(p::GDPParams,s::GDPState)
         S[i,2] = sum(s.am[i,i+1:end]) + p.sm[s.t+i,s.t+i]
     end
     S[1,2] += s.h
-    S = [S, zeros(Int64,empty,2)]
+    S = [S; zeros(Int64,empty,2)]
     return S::Array{Int64}
 end
 
@@ -29,11 +29,11 @@ function getCapacitiesFromMDP(p::GDPParams,s::GDPState,rng::AbstractRNG)
     for i = 1:n
         for j = 1:size(M,2)
             if j == 1
-                M[i,j] = p.getAAR(int64(s.aar),s.t+1,j,rng)
+                M[i,j] = p.getAAR(Int64(s.aar),s.t+1,j,rng)
             elseif j == size(M,2)
                 M[i,j] = 1000000 # basically infinity
             else
-                M[i,j] = p.getAAR(int64(M[i,j-1]),s.t+1,j,rng)
+                M[i,j] = p.getAAR(Int64(M[i,j-1]),s.t+1,j,rng)
             end
         end
     end

@@ -59,11 +59,11 @@ function getCapacitiesFromMDP(p::GDPParams,s::GDPState,rng::AbstractRNG)
             if j == 1
                 M[i,j] = s.aar
             elseif j == 2
-                M[i,j] = p.getAAR(int64(s.aar),s.t+1,j,rng)
+                M[i,j] = p.getAAR(Int64(s.aar),s.t+1,j,rng)
             elseif j == size(M,2)
                 M[i,j] = 1000000 # basically infinity
             else
-                M[i,j] = p.getAAR(int64(M[i,j-2]),s.t+1,j-1,rng)
+                M[i,j] = p.getAAR(Int64(M[i,j-2]),s.t+1,j-1,rng)
             end 
         end 
     end 
@@ -75,7 +75,7 @@ function getROPolicy(p::GDPParams,rng::AbstractRNG)
         S = getScheduleFromMDP(p,s)
         M,probs = getCapacitiesFromMDP(p,s,rng)
         M,probs = aggregateScenarios(M,probs)
-        b = ROParams([0:p.dInt-1],S,M,probs,p.ca)
+        b = ROParams(collect(0:p.dInt-1),S,M,probs,p.ca)
         return simulate(b)::GDPAction
     end
     return getROAction::Function

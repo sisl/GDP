@@ -30,7 +30,7 @@ function couplingConstraints(ro::Model,X,T::Int,p::ROParams,oldInds::Array{Int},
         for k = 1:length(inds)-1
             for i = 1:T+1
                 for j = 1:T+1
-                    @addConstraint(ro, X[inds[k],s,i,j] == X[inds[k]+1,s,i,j])
+                    @constraint(ro, X[inds[k],s,i,j] == X[inds[k]+1,s,i,j])
                 end
             end
         end
@@ -58,26 +58,26 @@ function simulate(p::ROParams)
     ro = Model(solver=GurobiSolver(OutputFlag=0,Threads=1))
 
     # X is a (Q x Q x T+2 x T+2) matrix whose (q, s, i, j) entry is the number of aircraft scheduled to depart during stage s and arrive at interval i rescheduled to arrive at interval j under scenario q
-    @defVar(ro, X[1:Q, 1:S, 0:T+1, 0:T+1] >= 0, Int)
+    @variable(ro, X[1:Q, 1:S, 0:T+1, 0:T+1] >= 0, Int)
 
     # W is a (Q x T+2) matrix whose (q, i) entry is the number absorbing air delay under scenario q in interval i 
-    @defVar(ro, W[1:Q, 0:T+1] >= 0, Int)
+    @variable(ro, W[1:Q, 0:T+1] >= 0, Int)
 
     # Indices are all non-negative
-    @defVar(ro, q[1:Q] >= 0)
-    @defVar(ro, s[1:Q] >= 0)
-    @defVar(ro, i[0:T+1] >= 0)
-    @defVar(ro, j[0:T+1] >= 0)
+    @variable(ro, q[1:Q] >= 0)
+    @variable(ro, s[1:Q] >= 0)
+    @variable(ro, i[0:T+1] >= 0)
+    @variable(ro, j[0:T+1] >= 0)
 
     # Objective function -  minimize a linear combination of ground and air delay
-    @setObjective(ro, Min, sum{p.p[q]*(cg*sum{sum{sum{(j-i)*X[q,s,i,j],j=i+1:T+1},i=p.ts[s]+1:T},s=1:S}+p.ca*sum{W[q,i],i=1:T+1}),q=1:Q}) 
+    @objective(ro, Min, sum{p.p[q]*(cg*sum{sum{sum{(j-i)*X[q,s,i,j],j=i+1:T+1},i=p.ts[s]+1:T},s=1:S}+p.ca*sum{W[q,i],i=1:T+1}),q=1:Q}) 
 
     # Constraints 1-3 are detailed on page 173 of the journal article
 
     for q = 1:Q
         for s = 1:S
             for i = p.ts[s]+1:T
-                @addConstraint(ro, sum{X[q,s,i,j],j=i:T+1} == p.S[s,i])
+                @constraint(ro, sum{X[q,s,i,j],j=i:T+1} == p.S[s,i])
             end
         end
     end
@@ -92,16 +92,16 @@ function simulate(p::ROParams)
                     end
                 end
             end
-            @addConstraint(ro, -W[q,i] + W[q,i-1] + temp <= p.M[q,i])
+            @constraint(ro, -W[q,i] + W[q,i-1] + temp <= p.M[q,i])
         end
     end
 
     for q = 1:Q
-        @addConstraint(ro, W[q,0] == 0)
+        @constraint(ro, W[q,0] == 0)
     end
 
     for q = 1:Q
-        @addConstraint(ro, W[q,T+1] == 0)
+        @constraint(ro, W[q,T+1] == 0)
     end
 
     # All scenarios must be connected at the root of the tree
@@ -109,18 +109,18 @@ function simulate(p::ROParams)
         for i = 1:T+1
             for j = 1:T+1
                 for s = 1:2
-                    @addConstraint(ro, X[q,s,i,j] == X[q+1,s,i,j])
+                    @constraint(ro, X[q,s,i,j] == X[q+1,s,i,j])
                 end
             end
         end
     end
 
     # Add coupling constraints for connected branches
-    couplingConstraints(ro,X,T,p,[1:Q],3)
+    couplingConstraints(ro,X,T,p,collect(1:Q),3)
 
     status = solve(ro)
 
-    delayed = getValue(X)
+    delayed = getvalue(X)
 
     a = GDPAction(zeros(Int16,T,1)) # 1 empty interval
 

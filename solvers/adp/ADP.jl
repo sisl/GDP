@@ -22,7 +22,7 @@ type PDR{T<:Action}
     A::Array{T,1}                   # set of allowable actions
     n::Array{Int32,1}               # number of times the action has been tried
     q::Array{Reward,1}              # reward approximation for each action
-    PDR{T<:Action}(A::Array{T,1}) = new(A,zeros(Int32,length(A)),zeros(Reward,length(A)))
+    PDR{Z<:Action}(A::Array{Z,1}) = new(A,zeros(Int32,length(A)),zeros(Reward,length(A)))
 end
 
 function selectAction(p::ADPParams,s::State)
@@ -39,8 +39,8 @@ function simulate(p::ADPParams,pdr::PDR,s::State,d::Depth)
     # This function runs one iteration of rollout improvement
     i = indmax(pdr.q + p.ec.*real(sqrt(complex(log(sum(pdr.n)))./pdr.n)))
     a = pdr.A[i] # choose action with highest UCT score
-    sp = p.getNextState(s,a,int64(1),p.rng)
-    q = p.getReward(s,a) + rollout(p,sp,int16(d-1))
+    sp = p.getNextState(s,a,Int64(1),p.rng)
+    q = p.getReward(s,a) + rollout(p,sp,Int16(d-1))
     pdr.n[i] = pdr.n[i] + one(Int32)
     pdr.q[i] += (q-pdr.q[i])/pdr.n[i]
 end
@@ -51,8 +51,8 @@ function rollout(p::ADPParams,s::State,d::Depth)
         return 0.0::Reward
     else 
         a = p.getAction(s,p.rng)
-        sp = p.getNextState(s,a,int64(p.d+1-d),p.rng)
-        return (p.getReward(s,a) + rollout(p,sp,int16(d-1)))::Reward
+        sp = p.getNextState(s,a,Int64(p.d+1-d),p.rng)
+        return (p.getReward(s,a) + rollout(p,sp,Int16(d-1)))::Reward
     end	
 end
 

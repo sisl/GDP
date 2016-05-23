@@ -16,8 +16,4 @@ function isequal(w::GDPAction,v::GDPAction)
     return isequal(w.td,v.td)
 end
 
-function ==(w::GDPAction,v::GDPAction) 
-    return isequal(w.td,v.td)
-end
-
 end # module
